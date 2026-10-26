@@ -145,3 +145,63 @@ cd ProyectoSalvavidas
 Requisitos del servidor: Tomcat 10.1 o superior (Jakarta EE) y Java 17 o superior.
 
 > En Tomcat, el contexto lo define el nombre del WAR; la propiedad `server.servlet.context-path` solo aplica al ejecutar con `spring-boot:run`.
+
+### Despliegue en IAsLab
+
+La aplicación está desplegada en el **Apache Tomcat 11** de IAsLab.
+
+| Dato | Valor |
+|---|---|
+| Servidor | `192.168.131.112` (computador `104m12`) |
+| Usuario del sistema | `computacion` |
+| Servidor de aplicaciones | Apache Tomcat 11.0.27 en `~/Desktop/apache-tomcat-11.0.27` |
+| Java | OpenJDK 17 |
+| Puerto | 8080 |
+| Archivo desplegado | `WebApp6.war` |
+| Contexto | `/WebApp6` |
+
+> Se requiere estar en la red de IAsLab (o conectado por VPN/ZeroTier) y usar `http://`, no `https://`.
+
+| Qué | URL |
+|---|---|
+| Inicio de sesión | http://192.168.131.112:8080/WebApp6/usuario/login |
+| Registro | http://192.168.131.112:8080/WebApp6/usuario/registro |
+
+Los usuarios de prueba son los mismos de la tabla [Usuarios de prueba](#usuarios-de-prueba), y la guía [Cómo probar la aplicación](#cómo-probar-la-aplicación) aplica igual cambiando `localhost` por `192.168.131.112`.
+
+**Pasos que se siguieron para desplegar:**
+
+1. Generar el WAR:
+
+   ```bash
+   cd ProyectoSalvavidas
+   ./mvnw clean package        # genera target/WebApp6.war
+   ```
+
+2. Copiar el WAR al servidor:
+
+   ```bash
+   scp target/WebApp6.war computacion@192.168.131.112:Desktop/apache-tomcat-11.0.27/webapps/
+   ```
+
+   Con Tomcat encendido, el WAR se despliega solo en unos segundos al aparecer en `webapps/`.
+
+3. Si Tomcat está apagado (por ejemplo, después de reiniciar el computador), entrar al servidor e iniciarlo:
+
+   ```bash
+   ssh computacion@192.168.131.112
+   cd ~/Desktop/apache-tomcat-11.0.27
+   ./bin/startup.sh
+   ```
+
+4. Verificar el despliegue en el log de Tomcat:
+
+   ```bash
+   tail -f ~/Desktop/apache-tomcat-11.0.27/logs/catalina.out
+   ```
+
+   Debe aparecer `Deployment of web application archive [.../webapps/WebApp6.war] has finished`. Para salir del log: `Ctrl + C` (Tomcat sigue corriendo).
+
+Para actualizar la aplicación basta con reemplazar `WebApp6.war` en `webapps/`. Para retirarla, borrar `WebApp6.war` de `webapps/`; Tomcat la desmonta sola. En el mismo Tomcat hay otras aplicaciones desplegadas, así que **no** se debe usar `./bin/shutdown.sh` solo para actualizar esta.
+
+> Como la base de datos es H2 en memoria, cada vez que se vuelve a desplegar el WAR o se reinicia Tomcat, los datos vuelven al estado de `data.sql`.
